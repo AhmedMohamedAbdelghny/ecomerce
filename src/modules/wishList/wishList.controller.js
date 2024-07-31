@@ -1,7 +1,8 @@
-import wishListModel from "../../../db/models/wishList.model.js";
+
 import productModel from "../../../db/models/product.model.js";
 import { asyncHandler } from "../../utils/asyncHandler.js";
 import { AppError } from "../../utils/classError.js";
+import wishListModel from './../../../db/models/wishlist.model';
 
 
 
