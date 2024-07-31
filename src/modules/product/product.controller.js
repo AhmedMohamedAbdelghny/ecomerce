@@ -51,31 +51,30 @@ export const createProduct = asyncHandler(async (req, res, next) => {
 
 
     let subPrice = price - price * ((discount || 0) / 100)
-    console.log(req.files);
 
     const { secure_url, public_id } = await cloudinary.uploader.upload(req.files.image[0].path, {
         folder: `EcommerceC42/categories/${categoryExist.customId}/subCategories/${subCategoryExist.customId}/products/${customId}/mainImage`
     })
 
-    // const product = await productModel.create({
-    //     title,
-    //     slug: slugify(title, {
-    //         lower: true,
-    //         replacement: "_"
-    //     }),
-    //     description,
-    //     category,
-    //     subCategory,
-    //     brand,
-    //     image: { secure_url, public_id },
-    //     images: list,
-    //     customId,
-    //     price,
-    //     discount,
-    //     subPrice,
-    //     stock,
-    //     createdBy: req.user._id
-    // })
+    const product = await productModel.create({
+        title,
+        slug: slugify(title, {
+            lower: true,
+            replacement: "_"
+        }),
+        description,
+        category,
+        subCategory,
+        brand,
+        image: { secure_url, public_id },
+        images: list,
+        customId,
+        price,
+        discount,
+        subPrice,
+        stock,
+        createdBy: req.user._id
+    })
 
 
     res.status(201).json({ msg: "done", product })

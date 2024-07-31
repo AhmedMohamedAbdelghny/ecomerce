@@ -42,8 +42,6 @@ export const createCategory = asyncHandler(async (req, res, next) => {
         id: category._id
     }
 
-    const x = 4
-    x = 4
     return res.status(201).json({ msg: "done", category })
 
 })

@@ -15,14 +15,14 @@ categoryRouter.use("/:categoryId/subCategories", subCategoryRouter)
 categoryRouter.post("/",
     multerHost(validExtensions.image).single("image"),
     validation(CV.createCategory),
-    auth("admin"),
+    auth(["admin"]),
     CC.createCategory);
 
 
 categoryRouter.put("/:id",
     multerHost(validExtensions.image).single("image"),
     validation(CV.updateCategory),
-    auth("admin"),
+    auth(["admin"]),
     CC.updateCategory);
 
 categoryRouter.get("/", CC.getCategories);

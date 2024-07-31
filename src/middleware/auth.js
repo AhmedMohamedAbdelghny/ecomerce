@@ -32,7 +32,7 @@ export const auth = (roles = []) => {
             return res.status(403).json({ msg: "you are not authorized to access this route" })
         }
     
-        if (parseInt(user.passwordChangedAt.getTime() / 1000) > decoded.iat) {
+        if (parseInt(user?.passwordChangedAt?.getTime() / 1000) > decoded.iat) {
             return res.status(403).json({ msg: "token expired" })
         }
         req.user = user

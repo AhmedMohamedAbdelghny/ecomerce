@@ -10,39 +10,39 @@ import slugify from "slugify";
 
 // ===================================  createSubCategory ================================================
 export const createSubCategory = asyncHandler(async (req, res, next) => {
-    // const { name } = req.body
-    // console.log(req.params);
-    // const categoryExist = await categoryModel.findById(req.params.categoryId)
-    // if (!categoryExist) {
-    //     return next(new AppError("category not exist", 404))
-    // }
-    // const subCategoryExist = await subCategoryModel.findOne({ name: name.toLowerCase() })
-    // if (subCategoryExist) {
-    //     return next(new AppError("subCategory already exist", 404))
-    // }
+    const { name } = req.body
+    console.log(req.params);
+    const categoryExist = await categoryModel.findById(req.params.categoryId)
+    if (!categoryExist) {
+        return next(new AppError("category not exist", 404))
+    }
+    const subCategoryExist = await subCategoryModel.findOne({ name: name.toLowerCase() })
+    if (subCategoryExist) {
+        return next(new AppError("subCategory already exist", 404))
+    }
 
-    // if (!req.file) {
-    //     return next(new AppError("image is required", 400))
-    // }
-    // const customId = nanoid(5)
-    // const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
-    //     folder: `EcommerceC42/categories/${categoryExist.customId}/subCategories/${customId}`
-    // })
+    if (!req.file) {
+        return next(new AppError("image is required", 400))
+    }
+    const customId = nanoid(5)
+    const { secure_url, public_id } = await cloudinary.uploader.upload(req.file.path, {
+        folder: `EcommerceC42/categories/${categoryExist.customId}/subCategories/${customId}`
+    })
 
-    // const subCategory = await subCategoryModel.create({
-    //     name,
-    //     slug: slugify(name, {
-    //         lower: true,
-    //         replacement: "_"
-    //     }),
-    //     image: { secure_url, public_id },
-    //     customId,
-    //     category: req.params.categoryId,
-    //     createdBy: req.user._id
-    // })
+    const subCategory = await subCategoryModel.create({
+        name,
+        slug: slugify(name, {
+            lower: true,
+            replacement: "_"
+        }),
+        image: { secure_url, public_id },
+        customId,
+        category: req.params.categoryId,
+        createdBy: req.user._id
+    })
 
 
-    // res.status(201).json({ msg: "done", subCategory })
+    res.status(201).json({ msg: "done", subCategory })
 
 })
 
