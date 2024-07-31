@@ -117,10 +117,13 @@ export const signIn = asyncHandler(async (req, res, next) => {
     const { email, password } = req.body
 
     const user = await userModel.findOne({ email: email.toLowerCase(), confirmed: true })
-    if (!user || !bcrypt.compareSync(password, user.password)) {
-        return next(new AppError("user not exist or password not correct ", 404))
+    if (!user) {
+        return next(new AppError("user not exist or  not confirmed ", 404))
     }
-
+    const match = bcrypt.compareSync(password, user.password)
+    if (!match) {
+        return next(new AppError("password not correct ", 404))
+    }
     const token = jwt.sign({ email, role: user.role }, process.env.signatureKey)
 
     await userModel.updateOne({ email }, { loggedIn: true })
