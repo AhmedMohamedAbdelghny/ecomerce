@@ -73,7 +73,7 @@ export const createOrder = asyncHandler(async (req, res, next) => {
 
     if (req.body?.coupon) {
         await couponModel.updateOne({ _id: req.body.coupon._id }, {
-            $push: { usedBy: req.user._id }
+            $addToSet: { usedBy: req.user._id }
         })
     }
 
@@ -176,13 +176,14 @@ export const webhook = asyncHandler(async (req, res, next) => {
         await orderModel.updateOne({ _id: event.data.object.metadata.orderId }, {
             status: "rejected"
         })
-        return res.status(400).json({ msg: "fail" })
+        return res.status(400).json({ msg: "fail", orderId: event.data.object.metadata.orderId })
 
     }
     await orderModel.updateOne({ _id: event.data.object.metadata.orderId }, {
         status: "placed"
     })
-    return res.status(400).json({ msg: "done" })
+    return res.status(200).json({ msg: "done", orderId: event.data.object.metadata.orderId })
+
 
 })
 // ===================================  cancelOrder ================================================
