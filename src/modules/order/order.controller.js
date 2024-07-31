@@ -1,0 +1,157 @@
+import cartModel from "../../../db/models/cart.model.js";
+import orderModel from "../../../db/models/order.model.js";
+import productModel from "../../../db/models/product.model.js";
+import { asyncHandler } from "../../utils/asyncHandler.js";
+import { AppError } from "../../utils/classError.js";
+import { createInvoice } from "../../utils/pdf.js";
+import couponModel from './../../../db/models/coupon.model.js';
+import { sendEmail } from './../../service/sendEmail.js';
+
+
+
+// ===================================  createOrder ================================================
+export const createOrder = asyncHandler(async (req, res, next) => {
+    const { productId, quantity, couponCode, address, phone, paymentMethod } = req.body
+
+
+    if (couponCode) {
+        const coupon = await couponModel.findOne({
+            code: couponCode,
+            // usedBy: { $nin: [req.user._id] },
+        })
+        if (!coupon || coupon.toDate < Date.now()) {
+            return next(new AppError("coupon not found or expired", 404))
+        }
+        req.body.coupon = coupon
+    }
+
+    let finalProducts = []
+    let flag = false
+
+    if (!productId) {
+        const cart = await cartModel.findOne({ user: req.user._id })
+        if (!cart) {
+            return next(new AppError("cart not found please select product to create order", 404))
+        }
+        finalProducts = cart.products
+        flag = true
+    } else {
+        finalProducts = [{ productId, quantity }]
+    }
+    console.log(finalProducts);
+    let subPrice = 0
+    let products = []
+    for (let product of finalProducts) {
+        const productExist = await productModel.findOne({ _id: product.productId, stock: { $gte: product.quantity } })
+        if (!productExist) {
+            return next(new AppError("product not found or out of stock", 404))
+        }
+        if (flag) {
+            product = product.toObject()
+        }
+        product.title = productExist.title
+        product.price = productExist.subPrice
+        product.finalPrice = productExist.subPrice * product.quantity
+        subPrice += product.finalPrice
+        products.push(product)
+    }
+
+
+
+    const order = await orderModel.create({
+        user: req.user._id,
+        products,
+        subPrice,
+        couponId: req.body?.coupon?._id,
+        totalPrice: subPrice - subPrice * ((req.body?.coupon?.amount || 0) / 100),
+        paymentMethod,
+        status: paymentMethod == "cash" ? "placed" : "waitPayment",
+        address,
+        phone
+    })
+
+    if (req.body?.coupon) {
+        await couponModel.updateOne({ _id: req.body.coupon._id }, {
+            $push: { usedBy: req.user._id }
+        })
+    }
+
+    for (const product of finalProducts) {
+        await productModel.updateOne({ _id: product.productId }, { $inc: { stock: -product.quantity } })
+    }
+
+    if (flag) {
+        await cartModel.updateOne({ user: req.user._id }, { products: [] })
+    }
+
+    const invoice = {
+        shipping: {
+            name: req.user.name,
+            address: req.user.address,
+            city: "Egypt",
+            state: "CA",
+            country: "Cairo",
+            postal_code: 94111
+        },
+        items: order.products,
+        subtotal: order.subPrice,
+        paid: order.totalPrice,
+        invoice_nr: order._id,
+        date: order.createdAt,
+        coupon: req.body?.coupon
+    };
+
+    await createInvoice(invoice, "invoice.pdf");
+
+    await sendEmail(req.user.email, "pdf", "pdf", [
+        {
+            path: "invoice.pdf",
+            contentType: "application/pdf"
+        },
+        {
+            path:"logo.jpg",
+             contentType: "image/jpg"
+        }
+    ])
+
+
+
+    return res.status(201).json({ msg: "done", order })
+})
+
+
+
+// ===================================  cancelOrder ================================================
+export const cancelOrder = asyncHandler(async (req, res, next) => {
+    const { reason } = req.body
+
+    const order = await orderModel.findOne({
+        user: req.user._id,
+        _id: req.params.orderId
+    })
+    if ((order.paymentMethod === "cash" && order.status != "placed") || (order.paymentMethod === "card" && order.status != "waitPayment")) {
+        return next(new AppError("you can not cancel this order", 400))
+    }
+    await orderModel.updateOne({ _id: id }, {
+        status: "cancelled",
+        cancelledBy: req.user._id,
+        reason
+    })
+
+    if (!order) {
+        return next(new AppError("order not found", 404))
+    }
+
+    if (order?.couponId) {
+        await couponModel.updateOne({ _id: order.couponId }, {
+            $pull: { usedBy: req.user._id }
+        })
+    }
+
+    for (const product of order.products) {
+        await productModel.updateOne({ _id: product.productId }, { $inc: { stock: product.quantity } })
+    }
+
+    return res.status(201).json({ msg: "done" })
+})
+
