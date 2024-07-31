@@ -21,7 +21,7 @@ orderRouter.put("/:orderId",
 
 
 
-app.post('/webhook', express.raw({ type: 'application/json' }), OC.webhook);
+orderRouter.post('/webhook', express.raw({ type: 'application/json' }), OC.webhook);
 
 
 
