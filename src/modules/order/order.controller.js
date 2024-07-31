@@ -172,7 +172,7 @@ export const webhook = asyncHandler(async (req, res, next) => {
     }
 
     // Handle the event
-    if (event.type !== 'checkout.session.completed') {
+    if (event.type != 'checkout.session.completed') {
         await orderModel.updateOne({ _id: event.data.object.metadata.orderId }, {
             status: "rejected"
         })
